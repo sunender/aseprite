@@ -1,73 +1,148 @@
-name: build
-on: [push, pull_request]
-jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-        build_type: [RelWithDebInfo, Debug]
-        enable_ui: [off]
-        include:
-          - os: ubuntu-latest
-            build_type: Debug
-            enable_ui: on
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: 'recursive'
-    - name: ccache
-      uses: hendrikmuhs/ccache-action@v1
-      if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
-      with:
-        key: ${{ matrix.os }}-${{ matrix.enable_ui }}-${{ matrix.build_type }}
-    - uses: turtlesec-no/get-ninja@main
-    - uses: ilammy/msvc-dev-cmd@v1
-      if: runner.os == 'Windows'
-    - name: Workaround for windows-2022 and cmake 3.25.0
-      if: runner.os == 'Windows'
-      shell: bash
-      run: rm -rf C:/Strawberry/
-    - name: Install Dependencies
-      shell: bash
-      run: |
-        if [[ "${{ runner.os }}" == "Linux" ]] ; then
-          sudo apt-get update -qq
-          sudo apt-get install -y \
-            libx11-dev libxcursor-dev libxi-dev
-        fi
-    - name: Generating Makefiles
-      shell: bash
-      run: |
-        if [[ "${{ runner.os }}" == "Windows" ]] ; then
-          export enable_ccache=off
-        else
-          export enable_ccache=on
-        fi
-        cmake -S . -B build -G Ninja \
-          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
-          -DENABLE_TESTS=ON \
-          -DENABLE_UI=${{ matrix.enable_ui }} \
-          -DENABLE_CCACHE=$enable_ccache
-    - name: Compiling
-      shell: bash
-      run: |
-        cd build && ninja
-    - name: Running C++ Tests
-      shell: bash
-      run: |
-        if [[ "${{ runner.os }}" == "Linux" ]] ; then
-          export XVFB=xvfb-run
-        fi
-        cd build && $XVFB ctest --output-on-failure
-    - name: Running CLI Tests
-      shell: bash
-      run: |
-        if [[ "${{ runner.os }}" == "Linux" ]] ; then
-          export XVFB=xvfb-run
-        fi
-        export ASEPRITE=$PWD/build/bin/aseprite
-        cd tests
-        $XVFB bash run-tests.sh
+name: build 名称：构建
+
+on: [push, pull_request] 开：[按，pull_request]
+
+jobs: 工作：
+
+  build: 建：
+
+    runs-on: ${{ matrix.os }}
+runs-on： ${{ matrix.os }}
+
+    strategy: 策略：
+
+      fail-fast: false 快速失效：假
+
+      matrix: 矩阵：
+
+        os: [windows-latest] 操作系统：[Windows-latest]
+
+        build_type: [Release] build_type：[发布]
+
+        enable_ui: [on] enable_ui： [开]
+
+        include: 包括：
+
+          - os: windows-latest
+- 操作系统：视窗最新
+
+            build_type: Release build_type：发布
+
+            enable_ui: on enable_ui：开启
+
+    steps: 步骤：
+
+    - uses: actions/checkout@v3
+- 用途：动作/checkout@v3
+
+      with: 跟：
+
+        submodules: 'recursive'
+子模块：“递归”
+
+    - name: ccache
+- 名称：缓存
+
+      uses: hendrikmuhs/ccache-action@v1
+用途：Hendrikmuhs/Ccache-action@v1
+
+      if: runner.os == 'Linux'
+if： runner.os == 'Linux'
+
+      with: 跟：
+
+        key: ${{ matrix.os }}-${{ matrix.enable_ui }}
+key： ${{ matrix.os }}-${{ matrix.enable_ui }}
+
+    - uses: seanmiddleditch/gha-setup-ninja@master
+- 用途：肖恩米迪奇/GHA设置ninja@master
+
+    - uses: ilammy/msvc-dev-cmd@v1
+- 用途：Ilammy/MSVC-DEV-cmd@v1
+
+      if: runner.os == 'Windows'
+if： runner.os == 'Windows'
+
+    - name: Install Dependencies
+- 名称：安装依赖项
+
+      shell: bash 外壳：巴什
+
+      run: | 运行： |
+
+        if [[ "${{ runner.os }}" == "Linux" ]] ; then
+if [[ “${{ runner.os }}” == “Linux” ]] ;然后
+
+          sudo apt-get update -qq
+
+          sudo apt-get install -y \
+
+            libx11-dev libxcursor-dev libxi-dev
+
+        fi
+
+    - name: Generating Makefiles
+- 名称：生成生成文件
+
+      shell: bash 外壳：巴什
+
+      run: | 运行： |
+
+        if [[ "${{ runner.os }}" == "Windows" ]] ; then
+如果 [[ “${{ runner.os }}” == “Windows” ]] ;然后
+
+          export enable_ccache=off
+导出enable_ccache=关闭
+
+        else 还
+
+          export enable_ccache=on
+导出enable_ccache=打开
+
+        fi
+
+        curl -L https://github.com/blueloveTH/aseprite/releases/download/v0.01/skia.zip --output skia.zip
+
+        7z x skia.zip
+7z x 滑雪板.zip
+
+        cmake -S . -B build -G Ninja \
+cmake -S .-B 构建 -G 忍者 \
+
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+
+          -DENABLE_UI=${{ matrix.enable_ui }} \
+
+          -DENABLE_CCACHE=$enable_ccache \
+
+          -DLAF_BACKEND=skia \ -DLAF_BACKEND=斯基亚 \
+
+          -DSKIA_DIR=./skia \
+
+          -DSKIA_LIBRARY_DIR=./skia/out/Release-x64 \
+
+          -DSKIA_LIBRARY=./skia/out/Release-x64/skia.lib
+
+    - name: Compiling
+- 名称：编译
+
+      shell: bash 外壳：巴什
+
+      run: | 运行： |
+
+        cd build && ninja
+
+    - uses: actions/upload-artifact@v3
+- 用途：操作/上传artifact@v3
+
+      with: 跟：
+
+        name: aseprite 名称： 阿斯普里特
+
+        path: | 路径： |
+
+          D:/a/aseprite/aseprite/build/bin/data
+D：/a/aseprite/aseprite/build/bin/data
+
+          D:/a/aseprite/aseprite/build/bin/aseprite.exe
+D：/a/aseprite/aseprite/build/bin/aseprite.exe 
